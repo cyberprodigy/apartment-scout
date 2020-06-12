@@ -1,6 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-
-async function getApartments(zip: number): Promise<Property[]> {
+export async function getApartments(zip: number): Promise<Property[]> {
   const API_URL = "https://www.boligsiden.dk/propertyresult/updatesearch";
 
   const response = await axios.post<
@@ -10,9 +9,9 @@ async function getApartments(zip: number): Promise<Property[]> {
     searchId: "9115dd506ae64b9abacdd1351938ea87",
     displayState: "PAAAAAEAAAAADAAAAA==",
     name: "setSituationQuickSearch",
-    arguments: '{"query":"2300","itemTypes":"300","completionType":null}',
+    arguments: `{"query":"${zip}","itemTypes":"300","completionType":null}`,
     pageNumber: 1,
-    itemsPerPage: 60,
+    itemsPerPage: 120,
     sortKey: 12,
     sortDescending: false,
     displayTab: 1,
@@ -38,7 +37,8 @@ async function getApartments(zip: number): Promise<Property[]> {
         property.city,
         (() => {
           const d = new Date();
-          d.setDate(Date.parse(property.dateAnnounced));
+          d.setTime(Date.parse(property.dateAnnounced));
+          console.log(d);
           return d;
         })(),
         parseInt(property.downPayment.split(".").join("")),
