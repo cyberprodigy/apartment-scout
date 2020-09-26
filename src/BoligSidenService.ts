@@ -1,17 +1,46 @@
 import axios, { AxiosResponse } from "axios";
-export async function getApartments(zip: number): Promise<Property[]> {
+export async function getApartments(zips: number[]): Promise<Property[]> {
+  const PAGE_SIZE = 60;
+  var allProperties = new Array<Property>();
+  var remaining: number | undefined = undefined;
+  var pageId = 1;
+
+  do {
+    const results = await fetchPaged(zips, pageId, PAGE_SIZE);
+    const total = results.totalCount;
+    if (remaining === undefined) {
+      remaining = total;
+    }
+
+    allProperties = allProperties.concat(results.properties);
+    remaining -= PAGE_SIZE;
+    pageId++;
+  } while (remaining > 0);
+
+  return allProperties;
+}
+
+async function fetchPaged(zips: number[], pageIdx: number, pageSize: number) {
   const API_URL = "https://www.boligsiden.dk/propertyresult/updatesearch";
+
+  const zipObj = zips.map((zip) => {
+    return {
+      number: zip.toString(),
+    };
+  });
 
   const response = await axios.post<
     string,
     AxiosResponse<UpdateSearchResponse>
   >(API_URL, {
-    searchId: "9115dd506ae64b9abacdd1351938ea87",
+    searchId: "57c834a444fd41efb2ff9f7fa286ec7e",
     displayState: "PAAAAAEAAAAADAAAAA==",
-    name: "setSituationQuickSearch",
-    arguments: `{"query":"${zip}","itemTypes":"300","completionType":null}`,
-    pageNumber: 1,
-    itemsPerPage: 120,
+    name: "setSituationClickableMap",
+    arguments: `{"countries":[],"municipalities":[],"postals":${JSON.stringify(
+      zipObj
+    )}}`,
+    pageNumber: pageIdx,
+    itemsPerPage: pageSize,
     sortKey: 12,
     sortDescending: false,
     displayTab: 1,
@@ -28,7 +57,7 @@ export async function getApartments(zip: number): Promise<Property[]> {
     petsAllowed: null,
     purchaseAllowed: null,
   });
-  return response.data.result.properties.map(
+  const properties = response.data.result.properties.map(
     (property) =>
       new Property(
         property.address,
@@ -38,7 +67,6 @@ export async function getApartments(zip: number): Promise<Property[]> {
         (() => {
           const d = new Date();
           d.setTime(Date.parse(property.dateAnnounced));
-          console.log(d);
           return d;
         })(),
         parseInt(property.downPayment.split(".").join("")),
@@ -49,9 +77,12 @@ export async function getApartments(zip: number): Promise<Property[]> {
         parseInt(property.paymentExpenses.split(".").join("")),
         parseInt(property.postal),
         parseInt(property.priceDevelopment.split("%").join("")),
-        property.redirectLink
+        property.redirectLink,
+        property.openHouseRedirectLink
       )
   );
+
+  return { properties, totalCount: response.data.result.totalCount };
 }
 
 interface PropertyUnnormalized {
@@ -69,6 +100,8 @@ interface PropertyUnnormalized {
   readonly postal: string;
   readonly priceDevelopment: string;
   readonly redirectLink: string;
+  readonly openHouseRedirectLink: string;
+
 }
 export class Property {
   constructor(
@@ -85,11 +118,13 @@ export class Property {
     public paymentExpenses: number,
     public postal: number,
     public priceDevelopment: number,
-    public redirectLink: string
+    public redirectLink: string,
+    public openHouseRedirectLink: string
   ) {}
 }
 interface UpdateSearchResponse {
   result: {
+    totalCount: number;
     properties: PropertyUnnormalized[];
   };
 }

@@ -1,4 +1,3 @@
-import React from "react";
 
 const values = [
   { startZip: 1000, endZip: 1499, name: "Copenhagen K", increase: 13922.75 },
@@ -58,6 +57,6 @@ const values = [
 export function getApprectionationForNext5YearsInAreaPer1Sqm(zip: number) {
   return (
     values.find((value) => zip >= value.startZip && zip <= value.endZip)!
-      .increase * 0.6
+      .increase * 0.8
   ); // 0.6 a pestimistic forecast
 }

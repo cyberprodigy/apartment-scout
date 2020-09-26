@@ -4,9 +4,6 @@ export function calculateBankExpenses(
   downPayment: number,
   years: number
 ) {
-  if (property.downPayment > downPayment) {
-    throw new Error("Downpayment too small");
-  }
   const MULTIPLIER = 0.003885;
   const loanSize = property.paymentCash - downPayment;
   const monthlyPayment = loanSize * MULTIPLIER;
@@ -16,5 +13,11 @@ export function calculateBankExpenses(
   const amountPaidInRentForPeriod = monthlyRent * 12 * years;
   const amountRemaining = loanSize - monthlyAfdrag * 12 * years;
 
-  return { monthlyPayment, amountPaidInRentForPeriod, amountRemaining };
+  return {
+    monthlyPayment,
+    amountPaidInRentForPeriod,
+    amountRemaining,
+    monthlyAfdrag,
+    monthlyRent,
+  };
 }

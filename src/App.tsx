@@ -1,13 +1,17 @@
-import { Button, TextField, Paper } from "@material-ui/core";
+import { Button, Paper, TextField } from "@material-ui/core";
 import React, { useState } from "react";
 import "./App.css";
-import { getApartments, Property } from "./BoligSidenService";
+import { getApartments } from "./BoligSidenService";
 import ApartmentBlock from "./components/ApartmentBlock";
-import { estimateProperties, EstimatedProperty } from "./PropertyEstimator";
+import { EstimatedProperty, estimateProperties } from "./PropertyEstimator";
+import { addTags, EstimatedTaggedProperty } from "./TagProvider";
 
 function App() {
-  const [zipCode, setZipCode] = useState("");
-  const [properties, setProperties] = useState<EstimatedProperty[]>([]);
+  const [zipCode, setZipCode] = useState(
+    "2200,1499,2930,2100,1999,1799,2400,2300,2870,2150,2450,2900,2820"
+  );
+  const [properties, setProperties] = useState<EstimatedTaggedProperty[]>([]);
+
   return (
     <div className="App">
       <TextField
@@ -20,51 +24,43 @@ function App() {
       <Button
         variant="contained"
         color="primary"
-        onClick={(e) =>
-          getApartments(parseInt(zipCode)).then((properties) => {
-            properties.sort((a, b) =>
-              a.areaPaymentCash < b.areaPaymentCash ? -1 : 1
-            );
-
-            setProperties(estimateProperties(properties).slice(0, 5));
-          })
-        }
-      >
-        Lowest price per square meter
-      </Button>
-
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={(e) =>
-          getApartments(parseInt(zipCode)).then((properties) => {
-            properties.sort((a, b) =>
-              a.areaPaymentCash < b.areaPaymentCash ? -1 : 1
-            );
-            properties = properties.reverse();
-            setProperties(estimateProperties(properties).slice(0, 5));
-          })
-        }
-      >
-        Highest price per square meter
-      </Button>
-
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={(e) =>
-          getApartments(parseInt(zipCode)).then((properties) => {
-            let estimated = estimateProperties(properties);
-            estimated.sort((a, b) => (a.roi < b.roi ? -1 : 1));
-            estimated = estimated.reverse();
-            setProperties(estimated.slice(0, 5));
-          })
-        }
+        onClick={(e) => {
+          getApartments(zipCode.split(",").map((zip) => parseInt(zip))).then(
+            (properties) => {
+              let estimated = estimateProperties(properties);
+              estimated.sort((a, b) => (a.roi < b.roi ? -1 : 1));
+              estimated = estimated.reverse();
+              /*estimated.unshift(
+                estimateProperties([
+                  new Property(
+                    "Gladsaxevej",
+                    30,
+                    46,
+                    "Copenhagen",
+                    new Date(),
+                    0,
+                    "123",
+                    "",
+                    1,
+                    1000000,
+                    3400,
+                    2860,
+                    0,
+                    ""
+                  ),
+                ])[0]
+              );*/
+              estimated = estimated.slice(0, 60);
+              let estimatedAndTagged = addTags(estimated);
+              setProperties(estimatedAndTagged)
+            }
+          );
+        }}
       >
         Best investment
       </Button>
-      <Paper>
-        {properties.map((property: EstimatedProperty) => {
+      <Paper style={{paddingTop:'20px'}}>
+        {properties.map((property: EstimatedTaggedProperty) => {
           return <ApartmentBlock property={property} />;
         })}
       </Paper>
